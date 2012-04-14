@@ -4,7 +4,15 @@ require 'json'
 @@lookup = JSON.parse(IO.read("lookup.json"))
 
 get '/' do
-	"Hello dash"
+  usage =	"Usage:<br/>" + "<table><tr><td>/lookup/</td></tr>" +
+  "<tr><td>&nbsp;</td><td>exchange</td></tr>" +
+  "<tr><td>&nbsp;</td><td>sector</td></tr>" +
+  "<tr><td>&nbsp;</td><td>industry</td></tr>" +
+  "<tr><td>&nbsp;</td><td>yahoo.finance.sector</td></tr>" +
+  "<tr><td>&nbsp;</td><td>yahoo.finance.industry</td></tr>" +
+  "<tr><td>&nbsp;</td><td>yahoo.finance.industry_by_sector?sub_key=sector_name</td></tr>" +
+  "</table>"
+  usage
 end
 
 get '/lookup/:key' do
