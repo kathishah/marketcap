@@ -29,7 +29,7 @@ get '/large_growing_cheap/:sector' do
   }
   logger.info("Found #{symbols.length} symbols")
   query = "select symbol from yahoo.finance.quotes where " +
-    "MarketCapitalization > 5 and " + #5B
+    "MarketCapitalization >= 5 and " + #5B
     "PERatio <= 20 and " +
     "PriceSales <= 1.3 and " #P/S
     #TODO Earnings growth estimate
