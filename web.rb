@@ -20,6 +20,9 @@ get '/' do
 end
 
 get '/large_growing_cheap/:sector' do
+  unless @@lookup['yahoo.finance.sector'].index(params[:sector])
+    halt 404, 'Unknown sector. See: /lookup/yahoo.finance.sector'
+  end
   industries = @@lookup['yahoo.finance.industry_by_sector'][params[:sector]].keys.sort
   # load symbols
   symbols = []
@@ -28,13 +31,15 @@ get '/large_growing_cheap/:sector' do
     ind['company'].each { |c| symbols << c['symbol'] }
   }
   logger.info("Found #{symbols.length} symbols")
-  query = "select symbol from yahoo.finance.quotes where " +
+  # create query
+  query = "select symbol,LastTradePriceOnly,Volume from yahoo.finance.quotes where " +
     "MarketCapitalization >= 5 and " + #5B
     "PERatio <= 20 and " +
     "PriceSales <= 1.3 and " #P/S
     #TODO Earnings growth estimate
   results = []
   if symbols.size > 100
+    # create batches so that the GET has less than 4096 chars
     batches = symbols.size / 100 + 1
     (1..batches).each { |batch_id|
       index_start = (batch_id - 1) * 100
@@ -60,7 +65,8 @@ get '/large_growing_cheap/:sector' do
     logger.info(response.inspect)
     if response.is_a?Net::HTTPOK
       j_response = JSON.parse(response.body)
-      results << j_response['query']['results']['quote']
+      logger.info(j_response.inspect)
+      results << j_response['query']['results']['quote'] if j_response and j_response.has_key?'query' and j_response['query'].has_key?'results' and j_response['query']['results']
     end
   end
   JSON.pretty_generate(results.flatten)
