@@ -19,7 +19,7 @@ get '/' do
   usage
 end
 
-get '/large_growing_cheap/:sector' do
+get '/preset/large_growing_cheap/:sector' do
   unless @@lookup['yahoo.finance.sector'].index(params[:sector])
     halt 404, 'Unknown sector. See: /lookup/yahoo.finance.sector'
   end
