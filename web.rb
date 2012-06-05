@@ -91,18 +91,6 @@ helpers do
   end
 end
 
-get '/' do
-  usage =	"Usage:<br/>" + "<table><tr><td>/lookup/</td></tr>" +
-  "<tr><td>&nbsp;</td><td>exchange</td></tr>" +
-  "<tr><td>&nbsp;</td><td>sector</td></tr>" +
-  "<tr><td>&nbsp;</td><td>industry</td></tr>" +
-  "<tr><td>&nbsp;</td><td>yahoo.finance.sector</td></tr>" +
-  "<tr><td>&nbsp;</td><td>yahoo.finance.industry</td></tr>" +
-  "<tr><td>&nbsp;</td><td>yahoo.finance.industry_by_sector/&lt;sector_name&gt;</td></tr>" +
-  "</table>"
-  usage
-end
-
 get '/preset/:preset_name/:sector' do
   symbols = get_symbols(params[:sector])
   if symbols.length == 0
@@ -170,19 +158,35 @@ end
 get '/preset/strong_forecasted_growth' do
 end
 
-get '/lookup/:key/?:sub_key?' do
-  if @@lookup.has_key?params[:key]
-    if params[:sub_key] 
-      if @@lookup[params[:key]].has_key?params[:sub_key]
-        @@lookup[params[:key]][params[:sub_key]].to_json
-      else
-        halt 404, "Sector not found. See /lookup/yahoo.finance.sector"
+get %r{/lookup(\/([a-z\.]*))?(\/(.*))?} do
+  content_type :json
+  #params[:captures].inspect.to_json
+  key = nil
+  sub_key = nil
+  begin
+    if params[:captures] and params[:captures].size > 0
+      key = params[:captures][1]
+      if params[:captures].size == 4
+        sub_key = params[:captures][3]
       end
     else
-      @@lookup[params[:key]].to_json
+      halt 404, {:error => "See usage"}.to_json
     end
-  else
-    halt 404, "Lookup key not found. See usage at /"
+    if @@lookup.has_key? key
+      if sub_key
+        if @@lookup[key].has_key?sub_key
+          @@lookup[key][sub_key].to_json
+        else
+          halt 404, {:error => "#{sub_key} not found.", :expected => @@lookup[key].keys}.to_json
+        end
+      else
+        @@lookup[key].to_json
+      end
+    else
+      halt 404, {:error => "#{key} not found.", :expected => @@lookup.keys}.to_json
+    end
+  rescue
+    halt 404, {:error => "See usage"}.to_json
   end
 end
 
@@ -190,3 +194,14 @@ get '/refresh/lookup' do
   @@lookup = JSON.parse(IO.read("lookup.json"))
 end
 
+get '/' do
+  content_type :json
+  usage = {"/lookup/<key>[/<sub_key>]" =>
+               {"key" => @@lookup.keys ,"sub_key" => "If a lookup key has sub_keys"},
+           "/preset/<preset_name>/<sector>" =>
+               {"preset_name" => ["large_growing_cheap", "largest_market_cap", "highest_volume"],
+                "sector" => "See /lookup/sector" }
+
+  }
+  JSON.pretty_generate(usage)
+end
